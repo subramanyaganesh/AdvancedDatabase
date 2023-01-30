@@ -1,0 +1,10 @@
+./storage_mgr
+Initializing Storage Manager
+By
+ Subramanya Ganesh (A20516250) 
+[test_assign1_1.c-test create open and close methods-L43-18:40:00] OK: expected true: filename correct
+[test_assign1_1.c-test create open and close methods-L44-18:40:00] OK: expected true: expect 1 page in new file
+[test_assign1_1.c-test create open and close methods-L45-18:40:00] OK: expected true: freshly opened file's page position should be 0
+[test_assign1_1.c-test create open and close methods-L51-18:40:00] OK: expected true: opening non-existing file should return an error.
+[test_assign1_1.c-test create open and close methods-L53-18:40:00] OK: finished test
+
