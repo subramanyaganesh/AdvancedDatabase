@@ -1,6 +1,7 @@
 GROUP 10
 ========================
 1)Subramanya Ganesh
+2) Kachikwu Nwike
 
 
 
@@ -15,9 +16,9 @@ HOW TO RUN
 
 4) Type "make" to compile all project files.
 
-5) Type "make run_test" to run "test_assign1_1.c" file.
+5) Type "make run" to run "test_assign1_1.c" file.
 
-6) Type "make run_test2" to run "test_assign1_2.c" file.
+6) Type "make run" to run "test_assign1_2.c" file.
 
 
 

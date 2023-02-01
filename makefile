@@ -27,5 +27,5 @@ clean:
 run:
 	./storage_mgr
 	
-run_test2:
+run2:
 	./storage_mgr2
