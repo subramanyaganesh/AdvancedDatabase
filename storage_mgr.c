@@ -209,15 +209,14 @@ extern RC writeBlock(int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage)
 //   Written by Subramanya Ganesh
 extern RC writeCurrentBlock(SM_FileHandle *fHandle, SM_PageHandle memPage)
 {
-	// assign the pointer to current location
-	int currentBlockNumber = fHandle->curPagePos / PAGE_SIZE;
+	returnCode = RC_ERROR_INVALID_PAGENUM;
+	int currentBlockNumber = fHandle->curPagePos / PAGE_SIZE; // assign the pointer to current location
 	if (currentBlockNumber > 0)
 	{
-		fHandle->totalNumPages++;
-		return writeBlock(currentBlockNumber, fHandle, memPage);
+		++fHandle->totalNumPages;
+		returnCode = writeBlock(currentBlockNumber, fHandle, memPage);
 	}
-	else
-		return RC_ERROR_INVALID_PAGENUM;
+	return returnCode;
 }
 
 // Written by Subramanya Ganesh

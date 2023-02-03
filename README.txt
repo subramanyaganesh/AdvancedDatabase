@@ -1,8 +1,14 @@
 GROUP 10
 ========================
+<<<<<<< HEAD
 1) Subramanya Ganesh (A20516250)
 2) Kachikwu Nwike (A20517226)
 3) Deshon Langdon (A20503832)
+=======
+1)Subramanya Ganesh
+2)Kachikwu Nwike
+3)Deshon Langdon 
+>>>>>>> 513a7d7b6944821d559cd034bd04f8cf97d72270
 
 
 HOW TO RUN
