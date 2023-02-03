@@ -1,3 +1,9 @@
+// GROUP 10
+// ========================
+// 1) Subramanya Ganesh (A20516250)
+// 2) Kachikwu Nwike (A20517226)
+// 3) Deshon Langdon (A20503832)
+
 #include "storage_mgr.h"
 #include "dberror.h"
 #include <stdio.h>
