@@ -18,7 +18,7 @@ HOW TO RUN
 
 5) Type "make run" to run "test_assign1_1.c" file.
 
-6) Type "make run" to run "test_assign1_2.c" file.
+6) Type "make run2" to run "test_assign1_2.c" file.
 
 
 
