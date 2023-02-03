@@ -1,9 +1,8 @@
 GROUP 10
 ========================
 1)Subramanya Ganesh
-2) Kachikwu Nwike
-3) Deshon Langdon
-
+2)Kachikwu Nwike
+3) 
 
 
 HOW TO RUN
@@ -54,8 +53,8 @@ destroyPageFile():
 
 readBlock():
            
--> We verify the validity of the page number. The page number should not be less than 0 and more than total number of pages.
--> Using the valid file pointer, we use fseek() to navigate to the specified location.
+-> We verify the validity of the page number. The page number should not be less than 0 and more than total number of pages.
+-> Using the valid file pointer, we use fseek() to navigate to the specified location.
 -> If fseek() succeeds, we read the data from the specified page number and store it in the memPage.
 
 getBlockPos():
@@ -64,33 +63,50 @@ getBlockPos():
 
 readFirstBlock():
 
--> To read the first block, we call the readBlock with the pageNum parameter as 0
+-> To read the first block, we call the readBlock with the pageNum parameter as 0
+-> We verify the validity of the page number. The page number should not be less than 0.
+-> Using the valid file pointer, we use fseek() to navigate to the first Block.
+-> Check if the first Block is within the page limits. If it is, we read the data from the first page number and set the currentPageNumber to the first block.
 
 readCurrentBlock():
 
--> To read the current block, we call the readBlock with the pageNum parameter as currentPageNumber.
+-> To read the current block, we call the readBlock with the pageNum parameter as currentPageNumber.
+-> Using the valid file pointer, we use fseek() and fread() to navigate and read the current Block.
+-> Set the currentPageNumber to the current block.
+-> Check if the current Block is within the page limits. 
 
 readNextBlock():
 
--> To read the next block, we call the readBlock with the pageNum parameter as currentPageNumber + 1.   
+-> To read the next block, we call the readBlock with the pageNum parameter as currentPageNumber + 1.   
+-> Check validity of next block (Not greater that the total number of blocks)
+-> Using the valid file pointer, we use fseek() and fread() to navigate and read the next Block.
+-> Set the currentPageNumber to the next block.
+-> Check if the next Block is within the page limits. 
 
 readPreviousBlock():
 
--> To read the previous block, we call the readBlock with the pageNum parameter as currentPageNumber - 1.           
+-> To read the previous block, we call the readBlock with the pageNum parameter as currentPageNumber - 1.      
+-> Check validity of previous block 
+-> Using the valid file pointer, we use fseek() and fread() to navigate and read the previous Block.
+-> Set the currentPageNumber to the previous block.
+-> Check if the previous Block is within the page limits.      
 
 readLastBlock():
                 
-->To read the last block, we call the readBlock with the pageNum parameter as totalNumPages - 1.
+->To read the last block, we call the readBlock with the pageNum parameter as totalNumPages - 1.
+-> Using the valid file pointer, we use fseek() and fread() to navigate and read the last Block.
+-> Set the currentPageNumber to the last block.
+-> Check if the last Block is within the page limits.
 
 writeBlock():
            
--> We verify the validity of the page number. The page number should not be less than 0 and more than number of pages overall.
--> Using the valid file pointer, we use fseek() to navigate to the specified location.
+-> We verify the validity of the page number. The page number should not be less than 0 and more than number of pages overall.
+-> Using the valid file pointer, we use fseek() to navigate to the specified location.
 -> If fseek() succeeds, we write the data from the specified page number and store it in the memPage.
 
 writeCurrentBlock():
 
--> To write the current block, we call the writeBlock with the pageNum parameter as currentPageNumber.
+-> To write the current block, we call the writeBlock with the pageNum parameter as currentPageNumber.
 
 appendEmptyBlock():
 
@@ -100,4 +116,3 @@ appendEmptyBlock():
 ensureCapacity():
 
 -> check if number of pages exceeds the total number of pages and then add that much number of empty blocks using appendEmptyBlock function.
-
