@@ -1,4 +1,4 @@
-GROUP 24
+GROUP 10
 ========================
 1)Subramanya Ganesh
 2)Kachikwu Nwike
