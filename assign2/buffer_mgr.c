@@ -19,119 +19,105 @@ typedef struct Page
 	int frequencyCounter;
 } PageF;
 
-// Written by Deshon Langdon
-extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const int numPages, ReplacementStrategy strategy, void *stratData)
+// Written by Deshon Langdon-kk
+void initialisePage(PageF *poolPages, int numPages)
 {
-	maximumBufferPool = 0;
-	rightIndex = 0;
-	writeCounter = 0;
-	totalNumberOfHits = 0;
-
-	bm->mgmtData = (PageF *)calloc(1, numPages * sizeof(PageF));
-	PageF *poolPages = (PageF *)bm->mgmtData;
-
+	// iterate to each page and initialise with 0
 	for (int i = 0; i < numPages; i++)
 	{
-		poolPages[i].hitRate = 0;
+		poolPages[i].hitRate = poolPages[i].setDirtyBit = poolPages[i].currentCounter = poolPages[i].frequencyCounter = 0;
 		poolPages[i].data = NULL;
 		poolPages[i].pageNum = NO_PAGE;
-		poolPages[i].setDirtyBit = 0;
-		poolPages[i].currentCounter = 0;
-		poolPages[i].frequencyCounter = 0;
 	}
+}
 
-	bm->numPages = maximumBufferPool = numPages;
+// Written by Deshon Langdon-kk
+extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const int numPages, ReplacementStrategy strategy, void *stratData)
+{
+	// allocate memory
+	bm->mgmtData = (PageF *)calloc(1, numPages * sizeof(PageF));
+	// initial condition
+	maximumBufferPool = rightIndex = writeCounter = totalNumberOfHits = 0;
+	initialisePage((PageF *)bm->mgmtData, numPages);
+	// assign values
 	bm->pageFile = (char *)pageFileName;
-	bm->numPages = maximumBufferPool = numPages;
+	maximumBufferPool = numPages;
+	bm->numPages = maximumBufferPool;
 	bm->strategy = strategy;
-
 	return RC_OK;
 }
 
-// Written by Deshon Langdon
+// Written by Deshon Langdon-kk
 extern RC shutdownBufferPool(BM_BufferPool *const bm)
 {
-	PageF *pFrame = (PageF *)bm->mgmtData;
 	forceFlushPool(bm);
-	free(pFrame);
-	bm->mgmtData = NULL;
-	bm->pageFile = NULL;
+	free((PageF *)bm->mgmtData);
+	bm->pageFile =bm->mgmtData= NULL;
 
 	return RC_OK;
 }
 
-// Written by Deshon Langdon
+// Written by Deshon Langdon-kk
 extern RC forceFlushPool(BM_BufferPool *const bm)
 {
 	int k = 0;
 	SM_FileHandle fh;
-	PageF *pFrame = (PageF *)bm->mgmtData;
+	PageF *pagetFrame = (PageF *)bm->mgmtData;
 
-	if (pFrame != NULL)
-	{
-		while (k < maximumBufferPool)
-		{
-			if (pFrame[k].setDirtyBit == 1 && pFrame[k].currentCounter == RC_OK)
-			{
-				openPageFile(bm->pageFile, &fh);
-				writeBlock(pFrame[k].pageNum, &fh, pFrame[k].data);
-				writeCounter += 1;
-				pFrame[k].setDirtyBit = 0;
-			}
-			k += 1;
-		}
-		return RC_OK;
-	}
-	else
-	{
+	if (pagetFrame == NULL)
 		return RC_ERROR_WHILE_FLUSHING_TO_POOL;
+
+	while (k < maximumBufferPool)
+	{
+		if (pagetFrame[k].setDirtyBit == 1 && pagetFrame[k].currentCounter == RC_OK)
+		{
+			openPageFile(bm->pageFile, &fh);
+			writeBlock(pagetFrame[k].pageNum, &fh, pagetFrame[k].data);
+			++writeCounter;
+			pagetFrame[k].setDirtyBit = 0;
+		}
+		++k;
 	}
+	return RC_OK;
 }
 
-// Written by Deshon Langdon
+// Written by Deshon Langdon-kk
 extern RC markDirty(BM_BufferPool *const bm, BM_PageHandle *const page)
 {
 	int j;
+	int rc = RC_ERROR;
 	int pageNum = page->pageNum;
-	PageF *pFrame = (PageF *)bm->mgmtData;
+	PageF *pagetFrame = (PageF *)bm->mgmtData;
 
-	if (pFrame != NULL)
+	if (pagetFrame == NULL)
+		return rc;
+
+	for (j = 0; j < maximumBufferPool; j++)
 	{
-		for (j = 0; j < maximumBufferPool; j++)
+		if (pagetFrame[j].pageNum == pageNum)
 		{
-			if (pFrame[j].pageNum == pageNum)
-			{
-				if (pFrame[j].pageNum == pageNum)
-				{
-					pFrame[j].setDirtyBit = 1;
-					return RC_OK;
-				}
-
-				j += 1;
-			}
+			pagetFrame[j].setDirtyBit = 1;
+			rc = RC_OK;
+			return rc;
 		}
-		return RC_ERROR;
 	}
-	else
-	{
-		return RC_ERROR;
-	}
+	return rc;
 }
 
-// Written by Deshon Langdon
+// Written by Deshon Langdon-kk
 extern RC forcePage(BM_BufferPool *const bm, BM_PageHandle *const page)
 {
 	int i = 0;
-	PageF *pFrame = (PageF *)bm->mgmtData;
+	PageF *pagetFrame = (PageF *)bm->mgmtData;
 	SM_FileHandle fh;
 	int pageNumPointer = page->pageNum;
 	for (; i < maximumBufferPool; i++)
 	{
-		if (pFrame[i].pageNum == pageNumPointer && openPageFile(bm->pageFile, &fh) == RC_OK)
+		if (pagetFrame[i].pageNum == pageNumPointer && openPageFile(bm->pageFile, &fh) == RC_OK)
 		{
-			if (writeBlock(pFrame[i].pageNum, &fh, pFrame[i].data) == RC_OK)
+			if (writeBlock(pagetFrame[i].pageNum, &fh, pagetFrame[i].data) == RC_OK)
 			{
-				pFrame[i].setDirtyBit = 0;
+				pagetFrame[i].setDirtyBit = 0;
 				++writeCounter;
 				break;
 			}
@@ -140,19 +126,18 @@ extern RC forcePage(BM_BufferPool *const bm, BM_PageHandle *const page)
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh
+// Written by Subramanya Ganesh-kk
 extern RC unpinPage(BM_BufferPool *const bm, BM_PageHandle *const page)
 {
 	int i = 0;
-	PageF *pFrame = (PageF *)bm->mgmtData;
-	int pageNumPointer = page->pageNum;
-	while (i < maximumBufferPool && pFrame[i].pageNum != pageNumPointer)
+	// reach to the point where pagenumber is pointing to the desired page Number
+	while (i < maximumBufferPool && ((PageF *)bm->mgmtData)[i].pageNum != page->pageNum)
 		i++;
-	pFrame[i].currentCounter -= 1;
+	// decrement the current counter
+	--((PageF *)bm->mgmtData)[i].currentCounter;
 	return RC_OK;
 }
-
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh
 extern void FIFO(BM_BufferPool *const bm, PageF *page)
 {
 	PageF *pFrame = (PageF *)bm->mgmtData;
@@ -189,7 +174,7 @@ extern void FIFO(BM_BufferPool *const bm, PageF *page)
 	}
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh
 extern void LRU(BM_BufferPool *const bm, PageF *page)
 {
 	int i = 0;
@@ -224,7 +209,7 @@ extern void LRU(BM_BufferPool *const bm, PageF *page)
 	pFrame[LHIndex].hitRate = page->hitRate;
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh
 extern RC assignValues(BM_PageHandle *const page, const PageNumber pageNum, PageF *pageF)
 {
 	page->pageNum = pageNum;
@@ -238,7 +223,7 @@ extern RC assignValues(BM_PageHandle *const page, const PageNumber pageNum, Page
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh
 extern RC setIfBlockReads(BM_BufferPool *const bm,
 						  BM_PageHandle *const page,
 						  const PageNumber pageNum,
@@ -260,7 +245,7 @@ extern RC setIfBlockReads(BM_BufferPool *const bm,
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh
 extern RC equalityCondition(BM_BufferPool *const bm,
 							BM_PageHandle *const page,
 							const PageNumber pageNum,
@@ -277,7 +262,7 @@ extern RC equalityCondition(BM_BufferPool *const bm,
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh
 void readBlockCondition(BM_BufferPool *const bm,
 						BM_PageHandle *const page,
 						const PageNumber pageNum,
@@ -297,7 +282,7 @@ void readBlockCondition(BM_BufferPool *const bm,
 	bm->strategy == RS_FIFO ? FIFO(bm, newPage) : LRU(bm, newPage);
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh
 extern RC pinPage(BM_BufferPool *const bm, BM_PageHandle *const page,
 				  const PageNumber pageNum)
 {
@@ -344,46 +329,40 @@ extern RC pinPage(BM_BufferPool *const bm, BM_PageHandle *const page,
 	}
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh-kk
 extern PageNumber *getFrameContents(BM_BufferPool *const bm)
 {
-	int i = 0;
-	PageNumber *fData = malloc(sizeof(PageNumber) * maximumBufferPool);
-	PageF *pFrame = (PageF *)bm->mgmtData;
-	for (; i < maximumBufferPool; i++)
-		fData[i] = pFrame[i].pageNum != -1 ? pFrame[i].pageNum : NO_PAGE;
-	return fData;
+	PageNumber *pageData = malloc(sizeof(PageNumber) * maximumBufferPool);
+	for (int i = 0; i < maximumBufferPool; i++)
+		pageData[i] = ((PageF *)bm->mgmtData)[i].pageNum != -1 ? ((PageF *)bm->mgmtData)[i].pageNum : NO_PAGE;
+	return pageData;
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh-kk
 extern bool *getDirtyFlags(BM_BufferPool *const bm)
 {
-	int i = 0;
-	bool *Flags = malloc(sizeof(bool) * maximumBufferPool);
-	PageF *pFrame = (PageF *)bm->mgmtData;
-	for (; i < maximumBufferPool; i++)
-		Flags[i] = pFrame[i].setDirtyBit == 1 ? true : false;
-	return Flags;
+	bool *decider = malloc(sizeof(bool) * maximumBufferPool);
+	for (int i = 0; i < maximumBufferPool; i++)
+		decider[i] = ((PageF *)bm->mgmtData)[i].setDirtyBit == 1 ? true : false;
+	return decider;
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh-kk
 extern int *getFixCounts(BM_BufferPool *const bm)
 {
-	int i = 0;
-	int *fixCounts = malloc(sizeof(int) * maximumBufferPool);
-	PageF *pFrame = (PageF *)bm->mgmtData;
-	for (; i < maximumBufferPool; i++)
-		fixCounts[i] = pFrame[i].currentCounter != -1 ? pFrame[i].currentCounter : 0;
-	return fixCounts;
+	int *defaultCount = malloc(sizeof(int) * maximumBufferPool);
+	for (int i = 0; i < maximumBufferPool; i++)
+		defaultCount[i] = ((PageF *)bm->mgmtData)[i].currentCounter != -1 ? ((PageF *)bm->mgmtData)[i].currentCounter : 0;
+	return defaultCount;
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh-kk
 extern int getNumReadIO(BM_BufferPool *const bm)
 {
 	return ++rightIndex;
 }
 
-// Written by Subramanya Ganesh-done
+// Written by Subramanya Ganesh-kk
 extern int getNumWriteIO(BM_BufferPool *const bm)
 {
 	return writeCounter;
