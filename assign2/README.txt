@@ -5,25 +5,24 @@ GROUP 10
 3)Deshon Langdon 
 
 
-HOW TO RUN
+Steps to Execute the code
 =========================
 
-1) Go to Project root (assign2) using Terminal.
+1) Clone the code from git repository.
+2) Navigate to assign2 project
+3) Validate if all the files are present by using the ls command
+4) Remove the old object files if any by using the command "make clean"
+5) Compile the code and generate the object files by using the command "make"
+6) Execute the object files i.e buff_mgr.exe by running "make run"
 
-2) Type ls to list the files and check that we are in the correct directory.
+In this project we have implemented 
+1.FIFO (First In First Out), 
+2.LRU (Least Recently Used) page replacement algorithms.
 
-3) Type "make clean" in order to delete old compiled .o files.
-
-4) Type "make" to compile all project files.
-
-5) Type "make run_test" to run buff_mgr.exe file.
-
-We have implemented FIFO (First In First Out), LRU (Least Recently Used) page replacement algorithms.
-
-FUNCTIONS USED
+METHODS USED
 ========================
 1. BUFFER POOL FUNCTIONS
-===========================
+========================
 
 initBufferPool():
 -> A new buffer pool is created with predifined number of pages.

@@ -19,7 +19,7 @@ typedef struct Page
 	int frequencyCounter;
 } PageF;
 
-// Written by Deshon Langdon-kk
+// Written by Deshon Langdon
 void initialisePage(PageF *poolPages, int numPages)
 {
 	// iterate to each page and initialise with 0
@@ -32,7 +32,7 @@ void initialisePage(PageF *poolPages, int numPages)
 	}
 }
 
-// Written by Deshon Langdon-kk
+// Written by Deshon Langdon
 extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const int numPages, ReplacementStrategy strategy, void *stratData)
 {
 	// allocate memory
@@ -48,7 +48,7 @@ extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName
 	return RC_OK;
 }
 
-// Written by Deshon Langdon-kk
+// Written by Deshon Langdon
 extern RC shutdownBufferPool(BM_BufferPool *const bm)
 {
 	forceFlushPool(bm);
@@ -58,7 +58,7 @@ extern RC shutdownBufferPool(BM_BufferPool *const bm)
 	return RC_OK;
 }
 
-// Written by Deshon Langdon-kk
+// Written by Deshon Langdon
 extern RC forceFlushPool(BM_BufferPool *const bm)
 {
 	int k = 0;
@@ -82,7 +82,7 @@ extern RC forceFlushPool(BM_BufferPool *const bm)
 	return RC_OK;
 }
 
-// Written by Deshon Langdon-kk
+// Written by Deshon Langdon
 extern RC markDirty(BM_BufferPool *const bm, BM_PageHandle *const page)
 {
 	int j;
@@ -105,7 +105,7 @@ extern RC markDirty(BM_BufferPool *const bm, BM_PageHandle *const page)
 	return rc;
 }
 
-// Written by Deshon Langdon-kk
+// Written by Deshon Langdon
 extern RC forcePage(BM_BufferPool *const bm, BM_PageHandle *const page)
 {
 	int i = 0;
@@ -127,7 +127,7 @@ extern RC forcePage(BM_BufferPool *const bm, BM_PageHandle *const page)
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern RC unpinPage(BM_BufferPool *const bm, BM_PageHandle *const page)
 {
 	int i = 0;
@@ -139,7 +139,7 @@ extern RC unpinPage(BM_BufferPool *const bm, BM_PageHandle *const page)
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 void putPageVal(int i, PageF *pagetFrame, PageF *page, int p)
 {
 	if (p == 0 || p == 1)
@@ -154,7 +154,7 @@ void putPageVal(int i, PageF *pagetFrame, PageF *page, int p)
 		pagetFrame[i].currentCounter = page->currentCounter;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern void FIFO(BM_BufferPool *const bm, PageF *page)
 {
 	PageF *pageFrame = (PageF *)bm->mgmtData;
@@ -180,7 +180,7 @@ extern void FIFO(BM_BufferPool *const bm, PageF *page)
 	}
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern void LRU(BM_BufferPool *const bm, PageF *page)
 {
 	int i = 0;
@@ -210,7 +210,7 @@ extern void LRU(BM_BufferPool *const bm, PageF *page)
 	putPageVal(LHIndex, pagetFrame, page, 0);
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern RC assignValues(BM_PageHandle *const page, const PageNumber pageNum, PageF *pageFrame)
 {
 
@@ -224,7 +224,7 @@ extern RC assignValues(BM_PageHandle *const page, const PageNumber pageNum, Page
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern RC setIfBlockReads(BM_BufferPool *const bm,
 						  BM_PageHandle *const page,
 						  const PageNumber pageNum,
@@ -249,7 +249,7 @@ extern RC setIfBlockReads(BM_BufferPool *const bm,
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern RC equalityCondition(BM_BufferPool *const bm,
 							BM_PageHandle *const page,
 							const PageNumber pageNum,
@@ -270,7 +270,7 @@ extern RC equalityCondition(BM_BufferPool *const bm,
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 void readBlockCondition(BM_BufferPool *const bm,
 						BM_PageHandle *const page,
 						const PageNumber pageNum,
@@ -335,7 +335,7 @@ extern RC pinPage(BM_BufferPool *const bm, BM_PageHandle *const page,
 	}
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern PageNumber *getFrameContents(BM_BufferPool *const bm)
 {
 	PageNumber *pageData = malloc(sizeof(PageNumber) * maximumBufferPool);
@@ -344,7 +344,7 @@ extern PageNumber *getFrameContents(BM_BufferPool *const bm)
 	return pageData;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern bool *getDirtyFlags(BM_BufferPool *const bm)
 {
 	bool *decider = malloc(sizeof(bool) * maximumBufferPool);
@@ -353,7 +353,7 @@ extern bool *getDirtyFlags(BM_BufferPool *const bm)
 	return decider;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern int *getFixCounts(BM_BufferPool *const bm)
 {
 	int *defaultCount = malloc(sizeof(int) * maximumBufferPool);
@@ -362,13 +362,13 @@ extern int *getFixCounts(BM_BufferPool *const bm)
 	return defaultCount;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern int getNumReadIO(BM_BufferPool *const bm)
 {
 	return ++rightIndex;
 }
 
-// Written by Subramanya Ganesh-kk
+// Written by Subramanya Ganesh
 extern int getNumWriteIO(BM_BufferPool *const bm)
 {
 	return writeCounter;
