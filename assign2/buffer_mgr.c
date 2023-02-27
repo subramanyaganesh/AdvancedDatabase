@@ -25,9 +25,10 @@ void initialisePage(PageF *poolPages, int numPages)
 	// iterate to each page and initialise with 0
 	for (int i = 0; i < numPages; i++)
 	{
-		poolPages[i].hitRate = poolPages[i].setDirtyBit = poolPages[i].currentCounter = poolPages[i].frequencyCounter = 0;
-		poolPages[i].data = NULL;
+		poolPages[i].setDirtyBit = poolPages[i].hitRate = 0;
 		poolPages[i].pageNum = NO_PAGE;
+		poolPages[i].data = NULL;
+		poolPages[i].frequencyCounter = poolPages[i].currentCounter = 0;
 	}
 }
 
@@ -52,7 +53,7 @@ extern RC shutdownBufferPool(BM_BufferPool *const bm)
 {
 	forceFlushPool(bm);
 	free((PageF *)bm->mgmtData);
-	bm->pageFile =bm->mgmtData= NULL;
+	bm->pageFile = bm->mgmtData = NULL;
 
 	return RC_OK;
 }
@@ -137,145 +138,150 @@ extern RC unpinPage(BM_BufferPool *const bm, BM_PageHandle *const page)
 	--((PageF *)bm->mgmtData)[i].currentCounter;
 	return RC_OK;
 }
-// Written by Subramanya Ganesh
+
+// Written by Subramanya Ganesh-kk
+void putPageVal(int i, PageF *pagetFrame, PageF *page, int p)
+{
+	if (p == 0 || p == 1)
+		pagetFrame[i].data = page->data;
+	if (p == 0)
+		pagetFrame[i].hitRate = page->hitRate;
+	if (p == 0 || p == 1)
+		pagetFrame[i].pageNum = page->pageNum;
+	if (p == 0 || p == 1)
+		pagetFrame[i].setDirtyBit = page->setDirtyBit;
+	if (p == 0 || p == 1)
+		pagetFrame[i].currentCounter = page->currentCounter;
+}
+
+// Written by Subramanya Ganesh-kk
 extern void FIFO(BM_BufferPool *const bm, PageF *page)
 {
-	PageF *pFrame = (PageF *)bm->mgmtData;
-
-	int fIndex = rightIndex % maximumBufferPool;
-	int fibm = fIndex % maximumBufferPool;
+	PageF *pageFrame = (PageF *)bm->mgmtData;
+	int indexValue = rightIndex % maximumBufferPool;
+	int bmfindex = indexValue % maximumBufferPool;
 	SM_FileHandle fh;
 
 	while (true)
 	{
-		if (pFrame[fIndex].currentCounter != 0)
+		if (pageFrame[indexValue].currentCounter != 0)
 		{
-			++fIndex;
-			fIndex = (fibm == 0) ? 0 : fIndex;
+			++indexValue;
+			indexValue = bmfindex == 0 ? 0 : indexValue;
 		}
 		else
 		{
-			if (pFrame[fIndex].setDirtyBit == 1)
-			{
-				if (openPageFile(bm->pageFile, &fh) == 0)
-				{
-					if (writeBlock(pFrame[fIndex].pageNum, &fh, pFrame[fIndex].data) == 0)
-					{
-						++writeCounter;
-					}
-				}
-			}
-			pFrame[fIndex].data = page->data;
-			pFrame[fIndex].pageNum = page->pageNum;
-			pFrame[fIndex].setDirtyBit = page->setDirtyBit;
-			pFrame[fIndex].currentCounter = page->currentCounter;
+			if (pageFrame[indexValue].setDirtyBit == 1 && openPageFile(bm->pageFile, &fh) == 0 && writeBlock(pageFrame[indexValue].pageNum, &fh, pageFrame[indexValue].data) == 0)
+				++writeCounter;
+
+			putPageVal(indexValue, pageFrame, page, 1);
 			break;
 		}
 	}
 }
 
-// Written by Subramanya Ganesh
+// Written by Subramanya Ganesh-kk
 extern void LRU(BM_BufferPool *const bm, PageF *page)
 {
 	int i = 0;
-	PageF *pFrame = (PageF *)bm->mgmtData;
+	PageF *pagetFrame = (PageF *)bm->mgmtData;
 	int LHIndex, LHNum;
 
-	while (i < maximumBufferPool && pFrame[i].currentCounter != 0)
+	while (i < maximumBufferPool && pagetFrame[i].currentCounter != 0)
 		i++;
 	LHIndex = i;
-	LHNum = pFrame[i].hitRate;
+	LHNum = pagetFrame[i].hitRate;
 	++i;
 	for (; i < maximumBufferPool; i++)
 	{
-		if (pFrame[i].hitRate < LHNum)
+		if (pagetFrame[i].hitRate < LHNum)
 		{
 			LHIndex = i;
-			LHNum = pFrame[i].hitRate;
+			LHNum = pagetFrame[i].hitRate;
 		}
 	}
 
-	if (pFrame[LHIndex].setDirtyBit == 1)
+	if (pagetFrame[LHIndex].setDirtyBit == 1)
 	{
 		SM_FileHandle fh;
-		if (openPageFile(bm->pageFile, &fh) == 0 && writeBlock(pFrame[LHIndex].pageNum, &fh, pFrame[LHIndex].data) == 0)
+		if (openPageFile(bm->pageFile, &fh) == 0 && writeBlock(pagetFrame[LHIndex].pageNum, &fh, pagetFrame[LHIndex].data) == 0)
 			writeCounter++;
 	}
-
-	pFrame[LHIndex].data = page->data;
-	pFrame[LHIndex].setDirtyBit = page->setDirtyBit;
-	pFrame[LHIndex].currentCounter = page->currentCounter;
-	pFrame[LHIndex].pageNum = page->pageNum;
-	pFrame[LHIndex].hitRate = page->hitRate;
+	putPageVal(LHIndex, pagetFrame, page, 0);
 }
 
-// Written by Subramanya Ganesh
-extern RC assignValues(BM_PageHandle *const page, const PageNumber pageNum, PageF *pageF)
+// Written by Subramanya Ganesh-kk
+extern RC assignValues(BM_PageHandle *const page, const PageNumber pageNum, PageF *pageFrame)
 {
-	page->pageNum = pageNum;
-	page->data = pageF[0].data;
-	pageF[0].pageNum = pageNum;
-	pageF[0].currentCounter += 1;
-	pageF[0].hitRate = 0;
-	pageF[0].frequencyCounter = 0;
-	rightIndex = 0;
-	totalNumberOfHits = 0;
+
+	rightIndex = pageFrame[0].hitRate = pageFrame[0].frequencyCounter = totalNumberOfHits = 0;
+	// set the index, number of hits and frequency counter as 0
+	page->data = pageFrame[0].data;
+	// assign the frames page and the page structure value to pageNumber
+	pageFrame[0].pageNum = page->pageNum = pageNum;
+	// increment the counter
+	++pageFrame[0].currentCounter;
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh
+// Written by Subramanya Ganesh-kk
 extern RC setIfBlockReads(BM_BufferPool *const bm,
 						  BM_PageHandle *const page,
 						  const PageNumber pageNum,
-						  PageF *pageF, int m,
+						  PageF *pageFrame, int m,
 						  bool *ptrIsFull)
 {
-	page->pageNum = pageNum;
-	pageF[m].pageNum = pageNum;
-	rightIndex += 1;
-	totalNumberOfHits += 1;
+
+	++rightIndex;
+	++totalNumberOfHits;
 
 	if (bm->strategy == RS_LRU)
-		pageF[m].hitRate = totalNumberOfHits;
+		pageFrame[m].hitRate = totalNumberOfHits;
 
-	page->data = pageF[m].data;
+	page->pageNum = pageNum;
 	*ptrIsFull = false;
-	pageF[m].currentCounter = 1;
-	pageF[m].frequencyCounter = 0;
+	page->data = pageFrame[m].data;
+	*ptrIsFull = false;
+	pageFrame[m].currentCounter = 1;
+	pageFrame[m].frequencyCounter = pageFrame[m].currentCounter - 1;
+	pageFrame[m].pageNum = pageNum;
+
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh
+// Written by Subramanya Ganesh-kk
 extern RC equalityCondition(BM_BufferPool *const bm,
 							BM_PageHandle *const page,
 							const PageNumber pageNum,
-							PageF *pageF, int m,
+							PageF *pageFrame, int m,
 							bool *ptrIsFull)
 {
-	totalNumberOfHits += 1;
+	++totalNumberOfHits;
 	if (bm->strategy == RS_LRU)
-		pageF[m].hitRate = totalNumberOfHits;
-	pageF[m].currentCounter += 1;
+		pageFrame[m].hitRate = totalNumberOfHits;
+	// assign the is full variable to false
 	*ptrIsFull = false;
+	// set page number to the page structure
 	page->pageNum = pageNum;
-	page->data = pageF[m].data;
+	// assign data to the page structure
+	page->data = pageFrame[m].data;
+	*ptrIsFull = false;
+	++pageFrame[m].currentCounter;
 	return RC_OK;
 }
 
-// Written by Subramanya Ganesh
+// Written by Subramanya Ganesh-kk
 void readBlockCondition(BM_BufferPool *const bm,
 						BM_PageHandle *const page,
 						const PageNumber pageNum,
-						PageF *pageF, PageF *newPage)
+						PageF *pageFrame, PageF *newPage)
 {
-	newPage->pageNum = pageNum;
-	newPage->setDirtyBit = newPage->frequencyCounter = 0;
+	newPage->pageNum = page->pageNum = pageNum;
 	newPage->currentCounter = 1;
-	rightIndex += 1;
-	totalNumberOfHits += 1;
-	page->pageNum = pageNum;
+	++rightIndex;
+	++totalNumberOfHits;
 	page->data = newPage->data;
-
+	newPage->setDirtyBit = newPage->frequencyCounter = 0;
 	if (bm->strategy == RS_LRU)
 		newPage->hitRate = totalNumberOfHits;
 
@@ -286,35 +292,35 @@ void readBlockCondition(BM_BufferPool *const bm,
 extern RC pinPage(BM_BufferPool *const bm, BM_PageHandle *const page,
 				  const PageNumber pageNum)
 {
+	PageF *pageFrame = (PageF *)bm->mgmtData;
 	bool isFull = true;
-	bool *ptrIsFull = &isFull;
-	PageF *pageF = (PageF *)bm->mgmtData;
 	SM_FileHandle fh;
-	if (pageF[0].pageNum == -1)
+	bool *ptrIsFull = &isFull;
+	if (pageFrame[0].pageNum == -1)
 	{
 		if (openPageFile(bm->pageFile, &fh) != 0)
 			return RC_ERROR_IN_OPEN_PAGEFILE;
-		pageF[0].data = (SM_PageHandle)malloc(PAGE_SIZE);
-		return ensureCapacity(pageNum, &fh) == 0 ? readBlock(pageNum, &fh, pageF[0].data) == 0 ? assignValues(page, pageNum, pageF)
-																							   : RC_READ_NON_EXISTING_PAGE
+		pageFrame[0].data = (SM_PageHandle)malloc(PAGE_SIZE);
+		return ensureCapacity(pageNum, &fh) == 0 ? readBlock(pageNum, &fh, pageFrame[0].data) == 0 ? assignValues(page, pageNum, pageFrame)
+																								   : RC_READ_NON_EXISTING_PAGE
 												 : RC_ERROR_WHILE_ENSURE_CAPACITY;
 	}
 	else
 	{
 		for (int m = 0; m < maximumBufferPool; m++)
 		{
-			if (pageF[m].pageNum != -1)
+			if (pageFrame[m].pageNum != -1)
 			{
-				if (pageF[m].pageNum == pageNum)
-					return equalityCondition(bm, page, pageNum, pageF, m, ptrIsFull);
+				if (pageFrame[m].pageNum == pageNum)
+					return equalityCondition(bm, page, pageNum, pageFrame, m, ptrIsFull);
 			}
 
 			else
 			{
 				if (openPageFile(bm->pageFile, &fh) != 0)
 					return RC_ERROR_IN_OPEN_PAGEFILE;
-				pageF[m].data = (SM_PageHandle)malloc(PAGE_SIZE);
-				return readBlock(pageNum, &fh, pageF[m].data) == 0 ? setIfBlockReads(bm, page, pageNum, pageF, m, ptrIsFull) : RC_READ_NON_EXISTING_PAGE;
+				pageFrame[m].data = (SM_PageHandle)malloc(PAGE_SIZE);
+				return readBlock(pageNum, &fh, pageFrame[m].data) == 0 ? setIfBlockReads(bm, page, pageNum, pageFrame, m, ptrIsFull) : RC_READ_NON_EXISTING_PAGE;
 			}
 		}
 		if (isFull == true)
@@ -323,7 +329,7 @@ extern RC pinPage(BM_BufferPool *const bm, BM_PageHandle *const page,
 			if (openPageFile(bm->pageFile, &fh) != 0)
 				return RC_ERROR_IN_OPEN_PAGEFILE;
 			newPage->data = (SM_PageHandle)malloc(PAGE_SIZE);
-			readBlock(pageNum, &fh, newPage->data) == 0 ? readBlockCondition(bm, page, pageNum, pageF, newPage) : RC_READ_NON_EXISTING_PAGE;
+			readBlock(pageNum, &fh, newPage->data) == 0 ? readBlockCondition(bm, page, pageNum, pageFrame, newPage) : RC_READ_NON_EXISTING_PAGE;
 		}
 		return RC_OK;
 	}
