@@ -3,14 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 #define READ "r"
 #define WRITE "w+"
 RC returnCode;
 FILE *filePage;
+static int i=0;
 
 extern void initStorageManager(void)
 {
@@ -36,39 +34,31 @@ extern RC createPageFile(char *fileName)
 	return returnCode;
 }
 
-// set and get File Descriptor
-void setFD(SM_FileHandle *fHandle, int fd)
-{
-	fHandle->mgmtInfo = malloc(sizeof(int));
-	*((int *)fHandle->mgmtInfo) = fd;
-}
-int getFd(SM_FileHandle *fHandle)
-{
-	return *((int *)fHandle->mgmtInfo);
-}
-
 // Written by Subramanya Ganesh
-extern RC openPageFile(char *fileName, SM_FileHandle *fHandle)
-{
-	returnCode = RC_FILE_NOT_FOUND; // initialize the return code
-
-	if (access(fileName, F_OK) != -1) // checks if the the file can be accessed in a F_OK format
-	{
-		int fd = open(fileName, O_RDWR); // open the file in readonly format
-		if (fd != -1)
-		{
-			struct stat state;
-			stat(fileName, &state);								   // returns the meta data of the file
-			long file_size = state.st_size;						   // retrive the info about the size of the file stored by the OS
-			fHandle->fileName = fileName;						   // saving the file name to the handler
-			fHandle->totalNumPages = (int)(file_size / PAGE_SIZE); // saving the number of pages to the handler
-			fHandle->curPagePos = 0;							   // setting the current position to the start of the file
-			setFD(fHandle, fd);									   // saving the info about fd to mgmtInfo pointer in  fHandle
-			printf("Inside openPageFile and value of fd=%d\n", getFd(fHandle));
-			return RC_OK;
-		}
+extern RC openPageFile(char *fileName,SM_FileHandle*fHandle){
+	//open file in read mode
+	filePage = fopen(fileName,READ);
+	//check if file opened successfully or not
+    if(filePage==NULL){
+    	return RC_FILE_HANDLE_NOT_INIT;
+    }
+    //set the pointer to the starting position
+    int start = fseek(filePage,0,SEEK_SET);
+    //set filehandle's file name
+    fHandle->fileName = fileName;
+    //set filehandle's current page position
+    fHandle->curPagePos = start;
+    //set filehandle's total number of pages
+    fHandle->totalNumPages = ftell(filePage)+1;
+	printf("Inside openPageFile and value of fd=%d\n", ++i);
+    int close = fclose(filePage);
+	if(close != 0){
+		returnCode = RC_ERROR_WHILE_CLOSE;
 	}
-	return returnCode;
+	else{
+		returnCode = RC_OK;
+	}
+    return returnCode;
 }
 
 // Written by Subramanya Ganesh

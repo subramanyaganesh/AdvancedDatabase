@@ -24,6 +24,17 @@ typedef int RC;
 #define RC_RM_NO_PRINT_FOR_DATATYPE 204
 #define RC_RM_UNKOWN_DATATYPE 205
 
+//New
+#define RC_ERROR_ON_CLOSE 5
+#define RC_ERROR_ON_DESTROY 6
+#define RC_ERROR_INVALID_PAGENUM 7
+#define RC_WRITE_NON_EXISTING_PAGE 8
+#define RC_ERROR 400 // Added a new definiton for ERROR
+#define RC_PINNED_PAGES_IN_BUFFER 500 // Added a new definition for Buffer Manager
+#define RC_ERROR_IN_FLUSH_POOL 600
+#define RC_ERROR_IN_OPEN_PAGEFILE 700
+#define RC_ERROR_IN_ENSURE_CAPACITY 701
+
 #define RC_IM_KEY_NOT_FOUND 300
 #define RC_IM_KEY_ALREADY_EXISTS 301
 #define RC_IM_N_TO_LAGE 302

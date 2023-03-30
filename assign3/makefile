@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS  = -g -Wall 
  
-default: recordmgr
+all: recordmgr
 
 recordmgr: test_assign3_1.o dberror.o expr.o record_mgr.o rm_serializer.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o
 	$(CC) $(CFLAGS) -o recordmgr test_assign3_1.o dberror.o expr.o record_mgr.o rm_serializer.o storage_mgr.o buffer_mgr.o -lm buffer_mgr_stat.o 
