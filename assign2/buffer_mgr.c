@@ -4,10 +4,10 @@
 #include "storage_mgr.h"
 #include <math.h>
 
-int maximumBufferPool;
-int rightIndex;
-int writeCounter;
-int totalNumberOfHits;
+int maximumBufferPool=0;
+int rightIndex=0;
+int writeCounter=0;
+int totalNumberOfHits=0;
 
 typedef struct Page
 {
@@ -52,7 +52,16 @@ extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName
 extern RC shutdownBufferPool(BM_BufferPool *const bm)
 {
 	forceFlushPool(bm);
-	free((PageF *)bm->mgmtData);
+	PageF *pg=(PageF *)bm->mgmtData;
+	int i= 0;
+	while(i < maximumBufferPool)
+	{
+		if(pg[i].currentCounter != 0)
+		{
+			return RC_PINNED_PAGES_IN_BUFFER;
+		} i++;
+	}
+	free(pg);
 	bm->pageFile = bm->mgmtData = NULL;
 
 	return RC_OK;

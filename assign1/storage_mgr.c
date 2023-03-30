@@ -3,12 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include<sys/stat.h>
 
 #define READ "r"
 #define WRITE "w+"
+#define READ_WRITE "r+"
 RC returnCode;
 FILE *filePage;
-static int i=0;
+
 
 extern void initStorageManager(void)
 {
@@ -34,31 +36,25 @@ extern RC createPageFile(char *fileName)
 	return returnCode;
 }
 
-// Written by Subramanya Ganesh
-extern RC openPageFile(char *fileName,SM_FileHandle*fHandle){
-	//open file in read mode
-	filePage = fopen(fileName,READ);
-	//check if file opened successfully or not
-    if(filePage==NULL){
-    	return RC_FILE_HANDLE_NOT_INIT;
-    }
-    //set the pointer to the starting position
-    int start = fseek(filePage,0,SEEK_SET);
-    //set filehandle's file name
-    fHandle->fileName = fileName;
-    //set filehandle's current page position
-    fHandle->curPagePos = start;
-    //set filehandle's total number of pages
-    fHandle->totalNumPages = ftell(filePage)+1;
-	printf("Inside openPageFile and value of fd=%d\n", ++i);
-    int close = fclose(filePage);
-	if(close != 0){
-		returnCode = RC_ERROR_WHILE_CLOSE;
+extern RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
+	filePage = fopen(fileName, READ);
+	if(filePage == NULL) {
+		returnCode = RC_FILE_HANDLE_NOT_INIT;
+	} else {
+		fHandle->fileName = fileName;
+		struct stat fileInfo;
+		fHandle->curPagePos = 0;
+		if(fstat(fileno(filePage), &fileInfo) >= 0){
+			fHandle->totalNumPages = fileInfo.st_size/ PAGE_SIZE;
+			if(fclose(filePage) != 0)
+				returnCode = RC_ERROR_WHILE_CLOSE;
+			else
+				returnCode = RC_OK;
+		}
+		else
+			returnCode = RC_ERROR;
 	}
-	else{
-		returnCode = RC_OK;
-	}
-    return returnCode;
+	return returnCode;
 }
 
 // Written by Subramanya Ganesh
@@ -163,42 +159,69 @@ extern RC readLastBlock(SM_FileHandle *fHandle, SM_PageHandle memPage)
 	return (fHandle->totalNumPages - 1 > 0) ? readBlock(fHandle->totalNumPages - 1, fHandle, memPage) : RC_ERROR_INVALID_PAGENUM;
 }
 //   Written by Subramanya Ganesh
-extern RC writeBlock(int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage)
-{
-	returnCode = RC_WRITE_NON_EXISTING_PAGE;   // initialize return code
-	filePage = fopen(fHandle->fileName, "r+"); // using r+ since we dont want to null the existing file wich is done in
-	if (filePage != NULL || filePage != 0)
-	{
-		// To check if the pageNum is less than totalNumPages and greater than 0
-		if (pageNum < fHandle->totalNumPages || pageNum > 0)
-		{
-			// To align the pointer with the file stream seek will be successful if fseek() function returns 0
-			int seekStatus = fseek(filePage, (pageNum * PAGE_SIZE), SEEK_SET);
-			if (seekStatus == 0)
-			{
-				printf("------------------------INSIDE SEEKSTATUS----------------------------\n");
-				fwrite(memPage, sizeof(char), strlen(memPage), filePage);			 // To write the content of memPage to pageF stream
-				fHandle->curPagePos = ftell(filePage);								 // To set the current page position to the cursor position of the file stream
-				returnCode = (fclose(filePage) != 0) ? RC_ERROR_WHILE_CLOSE : RC_OK; // check and Close the file stream
+extern RC writeBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	if (pageNum > fHandle->totalNumPages || pageNum < 0)
+		returnCode = RC_WRITE_FAILED;
+	else{
+		filePage = fopen(fHandle->fileName, READ_WRITE);
+		if(filePage == NULL)
+			returnCode = RC_FILE_NOT_FOUND;
+		else{
+			int startPosition = pageNum * PAGE_SIZE;
+			if(pageNum == 0) {
+				fseek(filePage, startPosition, SEEK_SET);
+				int i = 0;
+				int isEOF;
+
+				while(i < PAGE_SIZE){
+					isEOF = feof(filePage);
+					if(isEOF > 0)
+						 appendEmptyBlock(fHandle);
+					fputc(memPage[i], filePage);
+					i+=1;
+				}
+				fHandle->curPagePos = ftell(filePage);
+				int close = fclose(filePage);
+				if(close != 0){
+					returnCode = RC_ERROR_WHILE_CLOSE;
+				}
+				else{
+					returnCode = RC_OK;
+				}
+
+			} else {
+				fHandle->curPagePos = startPosition;
+				int close = fclose(filePage);
+				if(close != 0){
+					returnCode = RC_ERROR_WHILE_CLOSE;
+				}
+				else{
+					returnCode = RC_OK;
+				}
+				writeCurrentBlock(fHandle, memPage);
 			}
+			returnCode = RC_OK;
 		}
-	}
-	else
-	{
-		returnCode = RC_FILE_NOT_FOUND; // printf("\nFile not found...");
 	}
 	return returnCode;
 }
 
-//   Written by Subramanya Ganesh
-extern RC writeCurrentBlock(SM_FileHandle *fHandle, SM_PageHandle memPage)
-{
-	returnCode = RC_ERROR_INVALID_PAGENUM;
-	int currentBlockNumber = fHandle->curPagePos / PAGE_SIZE; // assign the pointer to current location
-	if (currentBlockNumber > 0)
-	{
-		++fHandle->totalNumPages;
-		returnCode = writeBlock(currentBlockNumber, fHandle, memPage);
+extern RC writeCurrentBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	filePage = fopen(fHandle->fileName, READ_WRITE);
+	if(filePage == NULL)
+		returnCode = RC_FILE_NOT_FOUND;
+	else{
+		appendEmptyBlock(fHandle);
+		fseek(filePage, fHandle->curPagePos, SEEK_SET);
+		fwrite(memPage, sizeof(char), strlen(memPage), filePage);
+		fHandle->curPagePos = ftell(filePage);
+		int close = fclose(filePage);
+		if(close != 0){
+			returnCode = RC_ERROR_WHILE_CLOSE;
+		}
+		else{
+			returnCode = RC_OK;
+		}
 	}
 	return returnCode;
 }
