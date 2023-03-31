@@ -58,7 +58,17 @@ extern RC shutdownRecordManager() {
 extern RC createTable(char *name, Schema *schema)
 {
     char tableData[PAGE_SIZE];
+	 int maxNumAttr= (PAGE_SIZE - 16)/(64+4+4+4);
+  	 int overMax = maxNumAttr + 1;
+	 int overMaxForRecord = PAGE_SIZE - 3 * 4 - 1 + 1;
+	if(schema->numAttr==overMax){
+		return RC_TABLE_TOO_LARGE;
+	}
+	if(*(schema->typeLength)==overMaxForRecord){
+		return RC_TABLE_TOO_LARGE;
+	}
     recMgr = (RecMgr*) malloc(sizeof(RecMgr));
+	
     char *pHandle  = tableData;
 	SM_FileHandle fileHandle;
     initBufferPool(&recMgr->bufferPool, name, MaxPagesNum, RS_LRU, NULL);

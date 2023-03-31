@@ -1,0 +1,29 @@
+./test_expr
+[test_expr.c-test value serialization and deserialization-L54-22:12:41] OK: expected <10> and was <10>: create Value 10
+[test_expr.c-test value serialization and deserialization-L55-22:12:41] OK: expected <5.300000> and was <5.300000>: create Value 5.3
+[test_expr.c-test value serialization and deserialization-L56-22:12:41] OK: expected <Hello World> and was <Hello World>: create Value Hello World
+[test_expr.c-test value serialization and deserialization-L57-22:12:41] OK: expected <true> and was <true>: create Value true
+[test_expr.c-test value serialization and deserialization-L58-22:12:41] OK: expected <true> and was <true>: create Value true
+[test_expr.c-test value serialization and deserialization-L60-22:12:41] OK: finished test
+
+[test_expr.c-test value comparison and boolean operators-L72-22:12:41] OK: expected true: 10 = 10
+[test_expr.c-test value comparison and boolean operators-L73-22:12:41] OK: expected true: 9 != 10
+[test_expr.c-test value comparison and boolean operators-L74-22:12:41] OK: expected true: Hello World = Hello World
+[test_expr.c-test value comparison and boolean operators-L75-22:12:41] OK: expected true: Hello Worl != Hello World
+[test_expr.c-test value comparison and boolean operators-L76-22:12:41] OK: expected true: Hello Worl != Hello Wor
+[test_expr.c-test value comparison and boolean operators-L79-22:12:41] OK: expected true: 3 < 10
+[test_expr.c-test value comparison and boolean operators-L80-22:12:41] OK: expected true: 5.0 < 6.5
+[test_expr.c-test value comparison and boolean operators-L83-22:12:41] OK: expected true: t AND t = t
+[test_expr.c-test value comparison and boolean operators-L84-22:12:41] OK: expected true: t AND f = f
+[test_expr.c-test value comparison and boolean operators-L86-22:12:41] OK: expected true: t OR f = t
+[test_expr.c-test value comparison and boolean operators-L87-22:12:41] OK: expected true: f OR f = f
+[test_expr.c-test value comparison and boolean operators-L90-22:12:41] OK: expected true: !f = t
+[test_expr.c-test value comparison and boolean operators-L92-22:12:41] OK: finished test
+
+[test_expr.c-test complex expressions-L105-22:12:41] OK: expected true: Const 10
+[test_expr.c-test complex expressions-L109-22:12:41] OK: expected true: Const 20
+[test_expr.c-test complex expressions-L113-22:12:41] OK: expected true: Const 10 < Const 20
+[test_expr.c-test complex expressions-L117-22:12:41] OK: expected true: Const true
+[test_expr.c-test complex expressions-L122-22:12:41] OK: expected true: (Const 10 < Const 20) AND true
+[test_expr.c-test complex expressions-L124-22:12:41] OK: finished test
+
