@@ -43,11 +43,15 @@ typedef int RC;
 #define RC_IM_KEY_ALREADY_EXISTS 301
 #define RC_IM_N_TO_LAGE 302
 #define RC_IM_NO_MORE_ENTRIES 303
+#define RC_OTHER_ERROR 304
+#define RC_MALLOC_FAILED 305
 
 // Added new definitions for Record Manager
 #define RC_RM_NO_TUPLE_WITH_GIVEN_RID 600
 #define RC_SCAN_CONDITION_NOT_FOUND 601
-
+#define RC_SCAN_MGR_CREATE_FAILED 601
+#define RC_RM_UNINITIALIZED 602
+#define NO_FREE_SLOTS 603
 /* holder for error messages */
 extern char *RC_message;
 
