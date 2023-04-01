@@ -262,6 +262,7 @@ extern RC insertRecord (RM_TableData *rel, Record *record)
 //Written by Kachikwu Nwike
 extern RC deleteRecord (RM_TableData *rel, RID id)
 {
+    //this function deletes rel
 	RecMgr *recordManager = rel->mgmtData;
 	pinPage(&recordManager->bufferPool, &recordManager->pHandle, id.page);
 	recordManager->recMgrFreePage = id.page;
@@ -275,7 +276,7 @@ extern RC deleteRecord (RM_TableData *rel, RID id)
 
 //Written by Kachikwu Nwike
 extern RC updateRecord (RM_TableData *rel, Record *record)
-{	
+{   // this function updates rel with record	
 	RecMgr *recordManager = rel->mgmtData;
 	
 	pinPage(&recordManager->bufferPool, &recordManager->pHandle, record->id.page);
@@ -290,7 +291,7 @@ extern RC updateRecord (RM_TableData *rel, Record *record)
 
 //Written by Subramanya Ganesh
 extern RC getRecord (RM_TableData *rel, RID id, Record *record)
-{
+{   // getRecord() gets record from rel
     char *data, *dataPointer;
 	RecMgr *mgr = rel->mgmtData;
 	pinPage(&mgr->bufferPool, &mgr->pHandle, id.page);
@@ -436,7 +437,8 @@ scanCount++;
 }
 
 //Written by Subramanya Ganesh
-extern RC closeScan(RM_ScanHandle *scan) {
+extern RC closeScan(RM_ScanHandle *scan) 
+{   //terminates the scan operation
     RecMgr *scanManager = (scan != NULL) ? scan->mgmtData : NULL;
     if (scanManager != NULL && scanManager->scanRecordCnt > 0) {
         RecMgr *recordManager = scan->rel->mgmtData;
@@ -461,6 +463,7 @@ extern int getRecordSize (Schema *schema)
 {
 	int val = 0;
     int i = 0;
+    // Loop through all of the attributes in the schema.
     for(i=0; i<schema->numAttr; i++)
     {
        switch (schema->dataTypes[i]) {
@@ -483,8 +486,8 @@ extern int getRecordSize (Schema *schema)
 //Written by Subramanya Ganesh
 extern Schema *createSchema (int numAttr, char **attrNames, DataType *dataTypes, int *typeLength, int keySize, int *keys)
 {
-	Schema *schema = (Schema *) malloc(sizeof(Schema));
-	
+	Schema *schema = (Schema *) malloc(sizeof(Schema)); // allocate memory for schema
+	// get schema values
 	schema->numAttr = numAttr;
 	schema->attrNames = attrNames;
 	schema->dataTypes = dataTypes;
@@ -504,9 +507,10 @@ extern RC freeSchema (Schema *schema)
 //Written by Kachikwu Nwike
 extern RC createRecord (Record **record, Schema *schema)
 {
-	Record *newRecord = (Record*) malloc(sizeof(Record));
+	Record *newRecord = (Record*) malloc(sizeof(Record)); 
 	int recSize = getRecordSize(schema);
-    newRecord->data= (char*) malloc(sizeof(char) * recSize);
+    newRecord->data= (char*) malloc(sizeof(char) * recSize); //allocate memory for record
+    //initialize
     newRecord->id.page = -10; //random
     newRecord->id.slot = -10; //random
     char *p = newRecord->data;
