@@ -5,8 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-SM_FileHandle btree_fh;
-int maxEle;
+SM_FileHandle btreeFH;
 
 typedef struct BTREE
 {
@@ -15,12 +14,12 @@ typedef struct BTREE
     RID *id;
 } BTree;
 
-BTree *root;
-BTree *scan;
+BTree *treeRoot, *scan;
+int maxEle;
 int indexNum = 0;
 
 // init and shutdown index manager
-RC initIndexManager (void *mgmtData)
+extern RC initIndexManager (void *mgmtData)
 {
     return RC_OK;
 }
@@ -31,24 +30,25 @@ RC shutdownIndexManager ()
 }
 
 // create, destroy, open, and close an btree index
-RC createBtree (char *idxId, DataType keyType, int n)
+extern RC createBtree (char *idxId, DataType keyType, int n)
 {
-	int i;
-    root = (BTree*)malloc(sizeof(BTree));
-    root->key = malloc(sizeof(int) * n);
-    root->id = malloc(sizeof(int) * n);
-    root->next = malloc(sizeof(BTree) * (n + 1));
-    for (i = 0; i < n + 1; i ++)
-        root->next[i] = NULL;
+    treeRoot = (BTree*)malloc(sizeof(BTree));
+    treeRoot->next = malloc(sizeof(BTree) * (n + 1));
+
+    treeRoot->key = malloc(sizeof(int) * n);
+    treeRoot->id = malloc(sizeof(int) * n);
+    
+    for (int i = 0; i < n + 1; i ++)
+        treeRoot->next[i] = NULL;
     maxEle = n;
     createPageFile (idxId);
     
     return RC_OK;
 }
 
-RC openBtree (BTreeHandle **tree, char *idxId)
+extern RC openBtree (BTreeHandle **tree, char *idxId)
 {
-    if(openPageFile (idxId, &btree_fh)==0){
+    if(openPageFile (idxId, &btreeFH)==0){
     	return RC_OK;
 	}
 
@@ -57,10 +57,10 @@ RC openBtree (BTreeHandle **tree, char *idxId)
 	}
 }
 
-RC closeBtree (BTreeHandle *tree)
+extern RC closeBtree (BTreeHandle *tree)
 {
-    if(closePageFile(&btree_fh)==0){
-	free(root);
+    if(closePageFile(&btreeFH)==0){
+	free(treeRoot);
     return RC_OK;
 	}
 	else{
@@ -68,7 +68,7 @@ RC closeBtree (BTreeHandle *tree)
 	}
 }
 
-RC deleteBtree (char *idxId)
+extern RC deleteBtree (char *idxId)
 {
     if(destroyPageFile(idxId)==0){
 		return RC_OK;
@@ -81,223 +81,283 @@ RC deleteBtree (char *idxId)
 
 
 // access information about a b-tree
-RC getNumNodes (BTreeHandle *tree, int *result)
+extern RC getNumNodes (BTreeHandle *tree, int *result)
 {
-    BTree *temp = (BTree*)malloc(sizeof(BTree));
-    
+     BTree *temp = (BTree*)malloc(sizeof(BTree));
     int numNodes = 0;
-    int i;
-    
-    for (i = 0; i < maxEle + 2; i ++) {
-        numNodes ++;
+    int i = 0;
+    while (i < maxEle + 2) {
+        numNodes++;
+        i++;
     }
-
     *result = numNodes;
-    
-    
+    free(temp);
     return RC_OK;
+
 }
 
-RC getNumEntries (BTreeHandle *tree, int *result)
+extern RC getNumEntries (BTreeHandle *tree, int *result)
 {
-	int totalEle = 0, i;
+	int totalEle = 0;
     BTree *temp = (BTree*)malloc(sizeof(BTree));
-    
-    for (temp = root; temp != NULL; temp = temp->next[maxEle])
-        for (i = 0; i < maxEle; i ++)
-            if (temp->key[i] != 0)
-                totalEle ++;
+    temp = treeRoot;
+    while (temp != NULL) {
+        int i = 0;
+        while (i < maxEle && temp->key[i] != 0) {
+            totalEle++;
+            i++;
+        }
+        temp = temp->next[maxEle];
+    }
     *result = totalEle;
     //free(temp);
     return RC_OK;
 }
 
-RC getKeyType (BTreeHandle *tree, DataType *result)
+extern RC getKeyType (BTreeHandle *tree, DataType *result)
 {
     return RC_OK;
 }
 
+extern RC findKey(BTreeHandle *tree, Value *key, RID *result) {
+    BTree *tmp = treeRoot;
+    bool found = FALSE;
 
-// index access
-RC findKey (BTreeHandle *tree, Value *key, RID *result)
-{
-    BTree *temp = (BTree*)malloc(sizeof(BTree));
-    int found = 0, i;
-    for (temp = root; temp != NULL; temp = temp->next[maxEle]) {
-        for (i = 0; i < maxEle; i ++) {
-            if (temp->key[i] == key->v.intV) {
-                (*result).page = temp->id[i].page;
-                (*result).slot = temp->id[i].slot;
-                found = 1;
-                break;
-            }
+
+
+    while (tmp != NULL) {
+        int i = 0;
+        while (i < maxEle && tmp->key[i] != key->v.intV) {
+            i++;
         }
-        if (found == 1)
+        if (tmp->key[i] == key->v.intV && i < maxEle) {
+            result->slot = tmp->id[i].slot;
+            result->page = tmp->id[i].page;
+            found = TRUE;
             break;
+        }
+        tmp = tmp->next[maxEle];
     }
     //free(temp);
-    
-    if (found == 1)
+    if (found == TRUE)
         return RC_OK;
     else
         return RC_IM_KEY_NOT_FOUND;
+    
 }
 
-RC insertKey (BTreeHandle *tree, Value *key, RID rid)
+
+
+extern RC insertKey (BTreeHandle *tree, Value *key, RID rid)
 {
-    int i = 0;
-    BTree *temp = (BTree*)malloc(sizeof(BTree));
-    BTree *node = (BTree*)malloc(sizeof(BTree));
-    node->key = malloc(sizeof(int) * maxEle);
-    node->id = malloc(sizeof(int) * maxEle);
+  int i = 0, nodeFull = 0,totalEle =0;
+
+    BTree *temp;
+    BTree *node = malloc(sizeof(BTree));
+    node->key = (int*)malloc(sizeof(int) * maxEle);
+    node->id = (RID*)malloc(sizeof(int) * maxEle);
     node->next = malloc(sizeof(BTree) * (maxEle + 1));
     
-    for (i = 0; i < maxEle; i ++) {
-    	node->key[i] = 0;
-    }
-
+    while (i < maxEle)
+{
+    node->key[i] = 0;
+    i++;
+}
 //    printf("\n\nIteration: %d", key->v.intV);
     
-    int nodeFull = 0;
+  
     
-    for (temp = root; temp != NULL; temp = temp->next[maxEle]) {
-        nodeFull = 0;
-        for (i = 0; i < maxEle; i ++) {
+     for (temp = treeRoot; temp != NULL; temp = temp->next[maxEle]) {
+       nodeFull = 0;
+       i = 0;
+         while (i < maxEle) {
             if (temp->key[i] == 0) {
-                temp->id[i].page = rid.page;
-                temp->id[i].slot = rid.slot;
+                int pg = rid.page;
+                int sl = rid.slot;
+                temp->id[i].page = pg;
+                temp->id[i].slot = sl;
                 temp->key[i] = key->v.intV;
                 temp->next[i] = NULL;
-                nodeFull ++;
+                nodeFull = nodeFull + 1;
                 break;
             }
+            i++;
         }
-        if ((nodeFull == 0) && (temp->next[maxEle] == NULL)) {
-            node->next[maxEle] = NULL;
+        if ((temp->next[maxEle] == NULL)  && (nodeFull == 0) ) 
+            {
             temp->next[maxEle] = node;
+            node->next[maxEle] = NULL;
         }
+     
     }
     
-    int totalEle = 0;
-    for (temp = root; temp != NULL; temp = temp->next[maxEle])
-        for (i = 0; i < maxEle; i ++)
+    
+    for (temp = treeRoot; temp != NULL; temp = temp->next[maxEle])
+        while (i < maxEle) {
             if (temp->key[i] != 0)
-                totalEle ++;
-
+          
+              totalEle ++;
+              i++;
+        }
+        
     if (totalEle == 6) {
-        node->key[0] = root->next[maxEle]->key[0];
-        node->key[1] = root->next[maxEle]->next[maxEle]->key[0];
-        node->next[0] = root;
-        node->next[1] = root->next[maxEle];
-        node->next[2] = root->next[maxEle]->next[maxEle];
+        int root_key = treeRoot->next[maxEle]->key[0];
+        int root_key2 = treeRoot->next[maxEle]->next[maxEle]->key[0];
+        BTree *root_next = treeRoot->next[maxEle];
+        
+        node->key[0] = root_key;
+        node->key[1] = root_key2;
+
+        node->next[0] = treeRoot;
+        node->next[1] = root_next;
+        node->next[2] = root_next->next[maxEle];
 
     }
     
     return RC_OK;
 }
 
-RC deleteKey (BTreeHandle *tree, Value *key)
+extern RC deleteKey (BTreeHandle *tree, Value *key)
 {
-    BTree *temp = (BTree*)malloc(sizeof(BTree));
+   // Initialize a temporary pointer to the root of the B-tree and a flag variable to track if the key was found
+    BTree *temp = treeRoot;
     int found = 0, i;
-    for (temp = root; temp != NULL; temp = temp->next[maxEle]) {
-        for (i = 0; i < maxEle; i ++) {
+
+    // Loop through the B-tree while the temporary pointer is not null and the key has not been found
+    while (temp != NULL && !found) {
+        // Loop through the keys in the current node while the key has not been found
+        for (i = 0; i < maxEle && !found; i ++) {
+            // If the key is found, set the key and RID values to 0 and set the found flag to 1
             if (temp->key[i] == key->v.intV) {
-                temp->key[i] = 0;
-                temp->id[i].page = 0;
                 temp->id[i].slot = 0;
+                temp->id[i].page = 0;
+                temp->key[i] = 0;
                 found = 1;
-                break;
             }
         }
-        if (found == 1)
-            break;
+        // Move to the next node by setting the temporary pointer to the next node in the array of children of the current node
+        temp = temp->next[maxEle];
     }
     
-
+    // Return the status code for successful completion of the function
     return RC_OK;
 }
 
-RC openTreeScan (BTreeHandle *tree, BT_ScanHandle **handle)
+extern RC openTreeScan (BTreeHandle *tree, BT_ScanHandle **handle)
 {
+    int i, count,swap, pg,st,c,d,  totalEle = 0; 
+   
     scan = (BTree*)malloc(sizeof(BTree));
-    scan = root;
+    scan = treeRoot;
+     BTree *temp = (BTree*)malloc(sizeof(BTree));
     indexNum = 0;
     
-    BTree *temp = (BTree*)malloc(sizeof(BTree));
-    int totalEle = 0, i;
-    for (temp = root; temp != NULL; temp = temp->next[maxEle])
-        for (i = 0; i < maxEle; i ++)
-            if (temp->key[i] != 0)
-                totalEle ++;
-
-    int key[totalEle];
-    int elements[maxEle][totalEle];
-    int count = 0;
-    for (temp = root; temp != NULL; temp = temp->next[maxEle]) {
-        for (i = 0; i < maxEle; i ++) {
-            key[count] = temp->key[i];
-            elements[0][count] = temp->id[i].page;
-            elements[1][count] = temp->id[i].slot;
-            count ++;
+    for (temp = treeRoot; temp != NULL; temp = temp->next[maxEle]) {
+        i = 0;
+        while(i < maxEle) {
+            if(temp->key[i] != 0) {
+                totalEle++;
+            }
+            i++;
         }
+        
     }
+
+    int elements[maxEle][totalEle];
+    int key[totalEle]; 
+    count = 0;
+
+    for (temp = treeRoot; temp != NULL; temp = temp->next[maxEle]) {
+        i = 0;
+        while(i < maxEle) {
+            if(temp->key[i] != 0) {
+                int temp_pg = temp->id[i].page;
+                key[count] = temp->key[i];
+                elements[0][count] = temp_pg;
+                elements[1][count] = temp->id[i].slot;
+                count = count + 1;
+            }
+            i++;
+        }
     
-    int swap;
-    int pg, st, c, d;
-    for (c = 0 ; c < count - 1; c ++)
+    }
+ 
+    c = 0;
+    while(c < count - 1)
     {
-        for (d = 0 ; d < count - c - 1; d ++)
+        d = 0;
+        while(d < count - c - 1)
         {
             if (key[d] > key[d+1])
             {
-                swap = key[d];
-                pg = elements[0][d];
-                st = elements[1][d];
-                
-                key[d]   = key[d + 1];
-                elements[0][d] = elements[0][d + 1];
-                elements[1][d] = elements[1][d + 1];
-                
-                key[d + 1] = swap;
-                elements[0][d + 1] = pg;
-                elements[1][d + 1] = st;
+                swap = key[d+1];
+                pg = elements[0][d+1];
+                st = elements[1][d+1];
+
+                key[d+1]   = key[d];
+                elements[0][d+1] = elements[0][d];
+                elements[1][d+1] = elements[1][d];
+
+                key[d] = swap;
+                elements[0][d] = pg;
+                elements[1][d] = st;
             }
+            d++;
         }
+        c++;
     }
-    
+
     count = 0;
-    for (temp = root; temp != NULL; temp = temp->next[maxEle]) {
-        for (i = 0; i < maxEle; i ++) {
-            temp->key[i] =key[count];
-            temp->id[i].page = elements[0][count];
-            temp->id[i].slot = elements[1][count];
-            count ++;
+    temp = treeRoot;
+    for (temp = treeRoot; temp != NULL; temp = temp->next[maxEle]) {
+        i = 0;
+        while(i < maxEle) {
+            if(temp->key[i] != 0) {
+                int temp_pg = elements[0][count];
+                temp->key[i] =key[count];
+                temp->id[i].page = temp_pg;
+                temp->id[i].slot = elements[1][count];
+                count++;
+            }
+            i++;
         }
+        
     }
 
     return RC_OK;
 }
 
-RC nextEntry (BT_ScanHandle *handle, RID *result)
+
+extern RC nextEntry (BT_ScanHandle *handle, RID *result)
 {
-    if(scan->next[maxEle] != NULL) {
-        if(maxEle == indexNum) {
-            indexNum = 0;
-            scan = scan->next[maxEle];
-        }
+    if (scan->next[maxEle] != NULL) {
+        do {
+            // If all elements in the current node have been scanned, move to the next node
+            if (indexNum == maxEle) {
+                indexNum = 0;
+                scan = scan->next[maxEle];
+            }
 
-        (*result).page = scan->id[indexNum].page;
-        (*result).slot = scan->id[indexNum].slot;
-        indexNum ++;
+            result->page = scan->id[indexNum].page;
+            result->slot = scan->id[indexNum].slot;
+            indexNum++;
+        // Keep scanning nodes until an entry is found or there are no more nodes to scan
+        } while (scan->next[maxEle] != NULL && (*result).page == 0 && (*result).slot == 0);
+        
+        // If there are no more entries to scan, return an error
+        if ((*result).page == 0 && (*result).slot == 0) {
+            return RC_IM_NO_MORE_ENTRIES;
+        }
+        
+        return RC_OK;
     }
-    else
+    // If there are no more nodes to scan, return an error
+    else {
         return RC_IM_NO_MORE_ENTRIES;
-    
-    return RC_OK;
+    }
 }
 
-RC closeTreeScan (BT_ScanHandle *handle)
+extern RC closeTreeScan (BT_ScanHandle *handle)
 {
     indexNum = 0;
     return RC_OK;
