@@ -1,57 +1,72 @@
-Assignment 4: B+ Tree
+GROUP 10
+========================
+1)Subramanya Ganesh
+2)Kachikwu Nwike
+3)Deshon Langdon 
 
-Snehita Kolapkar A20389074
-Akash Gupta A20378676
-Tanmay Pradhan A20376280
+Steps to Execute the test cases
+=========================
 
+1) Clone the project template from git.
+2) Navigate to the project assign4
+3) Validate that all the files are present using the ls command
+4) Run "make clean" command to clear all the old .o or object files
+5) Run "make" command to compile the code and create the corresponding objet file
+6) Run "make run1" 
+7) Run "make run2" 
 
-----------B Tree Functions------------
+FUNCTIONS USED
+========================
 
-1) initIndexManager
-  -Initializes Btree.
+1) initIndexManager (void *mgmtData)
+  -This function initializes the Btree.
 
-2) shutdownIndexManager
-  -Shuts down index manager
+2) shutdownIndexManager()
+  -This function closes index manager
 
-3) createBtree
-  -Allocates memory to all elements of Btree struct. Creates a page file with name idxId.
+3) createBtree (char *idxId, DataType keyType, int n)
+  -This function allocates memory to all Btree struct elements. Creates a page file called idxId.
 
-4) openBtree
-  -Opens page file of the name idxID
+4) openBtree (BTreeHandle **tree, char *idxId)
+  -This function opens the page file with the name idxID.
 
-5) closeBtree
+5) extern RC closeBtree (BTreeHandle *tree)
   -Frees all the allocated memory.
 
-6) deleteBtree
-  -Deletes all the record of the mentioned Btree
+6) deleteBtree (char *idxId)
+  -This function deletes all records from the specified Btree.
 
----------Access Functions------------
 
-7) getNumNodes
-  -Returns the numbers of nodes in a Btree
+Btree Information Methods
+========================
 
-8) getNumEntries
-  -Returns the total number of entries in a Btree
+7) getNumNodes (BTreeHandle *tree, int *result)
+  -This function returns the number of Btree nodes.
 
-9) getKeyType
-  -Returns the key type i.e Integer,String etc
+8) getNumEntries (BTreeHandle *tree, int *result)
+  -The total number of entries in a Btree is returned by this function.
 
---------Index Access Functions----------
+9) getKeyType (BTreeHandle *tree, DataType *result)
+  -This function returns the key type, such as Integer, String, and so on.
 
-10) findKey
-   -Returns the key which needs to be found
 
-11) insertKey
-   -Inserts the given key in a Btree
+Index Access Methods
+========================
 
-12) deleteKey
-   -Deletes corresponding key in a Btree
+10) findKey(BTreeHandle *tree, Value *key, RID *result)
+   -This function returns the key that must be searched.
 
-13) openTreeScan
-   -Scans all entries of the tree
+11) insertKey (BTreeHandle *tree, Value *key, RID rid)
+   -This function puts the specified key into a Btree.
 
-14) nextEntry
-   -Reads next entry in the Btree
+12) deleteKey (BTreeHandle *tree, Value *key)
+   -This function removes the corresponding key from a Btree.
 
-15) closeTreeScan
-   -Closes scanning of tree elements
+13) openTreeScan (BTreeHandle *tree, BT_ScanHandle **handle)
+   -This function searches over all of the tree''s entries.
+
+14) nextEntry (BT_ScanHandle *handle, RID *result)
+   -This function reads the Btree''s next entry.
+
+15) closeTreeScan (BT_ScanHandle *handle)
+   -This function terminates tree element scanning.
